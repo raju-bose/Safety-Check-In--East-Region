@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E4611A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Site Safety Field App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ===== SETTINGS ARE IN THE <script> AT THE BOTTOM (CONFIG) ===== */
+:root{
+  --bg:#EDF0F2; --surface:#FFFFFF; --sunk:#E3E8EC; --ink:#15202A; --muted:#566573; --line:#D2DAE1;
+  --accent:#E4611A; --accent-ink:#FFFFFF; --ok:#1C7F47; --ok-soft:#DDF1E4; --bad:#BF2A2A; --bad-soft:#F8DEDE; --warn:#946200; --warn-soft:#F6EACB; --stripe:#15202A;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif; --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0E151B; --surface:#16202A; --sunk:#1D2935; --ink:#E6EBEF; --muted:#94A3B0; --line:#2A3947;
+  --accent:#FF8740; --accent-ink:#1A0E05; --ok:#52C98B; --ok-soft:#153324; --bad:#F27272; --bad-soft:#3B1C1C; --warn:#E5B64E; --warn-soft:#352A12; --stripe:#E6EBEF; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;padding-bottom:env(safe-area-inset-bottom,0px)}
+.bar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar-in{max-width:640px;margin:0 auto;padding:12px 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bar h1{font:700 24px var(--f-display);text-transform:uppercase;margin:0;line-height:1}
+.bar small{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:500;margin-top:3px}
+.hazard{height:6px;background:repeating-linear-gradient(-45deg,var(--accent) 0 10px,var(--stripe) 10px 20px)}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:14px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.step.locked{opacity:.6}
+.step.locked .body{display:none}
+.step-h{display:flex;align-items:center;gap:10px}
+.num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 17px var(--f-display);background:var(--sunk)}
+.step.done .num{background:var(--ok);color:var(--surface)} .step.active .num{background:var(--accent);color:var(--accent-ink)}
+.step-h h2{font:700 20px var(--f-display);text-transform:uppercase;margin:0;flex:1;min-width:0}
+.tag{font-size:13px;color:var(--muted);font-weight:600}
+.body{display:flex;flex-direction:column;gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted);min-width:0}
+input[type=text],select{font:500 16px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 11px;width:100%;min-width:0}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 16px var(--f-body);padding:11px 16px;cursor:pointer;text-decoration:none;min-height:46px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>.btn{flex:1 1 140px}
+.banner{border-radius:8px;padding:12px 14px;font-weight:600}
+.banner p{margin:2px 0 0;font-weight:400;font-size:14px}
+.banner.ok{background:var(--ok-soft);color:var(--ok)} .banner.bad{background:var(--bad-soft);color:var(--bad)} .banner.warn{background:var(--warn-soft);color:var(--warn)} .banner.info{background:var(--sunk)}
+.gps{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:8px;background:var(--bg)}
+.mono{font-family:var(--f-mono);font-size:14px;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;font:600 12px var(--f-body);letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.warn{background:var(--warn-soft);color:var(--warn)}
+.ppe{display:flex;flex-direction:column;gap:8px}
+.ppe-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--bg);border-radius:8px}
+.ppe-row span{font-weight:600;min-width:0}
+.ppe-row small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.yn{display:flex;gap:6px;flex:none}
+.yn button{min-width:58px;min-height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 15px var(--f-body);cursor:pointer}
+.yn button.on.y{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.yn button.on.n{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.cam{position:relative;background:#000;border-radius:10px;overflow:hidden;aspect-ratio:3/4;max-width:100%}
+.cam video{width:100%;height:100%;object-fit:cover;display:block}
+.cam .lockface{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#fff;padding:20px;font-weight:600;background:repeating-linear-gradient(-45deg,rgba(228,97,26,.25) 0 14px,rgba(0,0,0,.6) 14px 28px)}
+.cam .lockface b{display:block;font:700 26px var(--f-display);text-transform:uppercase}
+.cam-bar{display:flex;gap:10px}
+.cam-bar .btn{flex:1}
+.shot{width:100%;border-radius:8px;display:block}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.ph{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px}
+.ph input{font-size:14px;padding:7px 8px}
+.ph button{background:none;border:0;color:var(--bad);font:600 13px var(--f-body);text-align:left;padding:0;cursor:pointer}
+.note{font-size:13px;color:var(--muted);margin:0}
+.note a,.hint a{color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in"><div><h1>Site Safety Field App</h1><small>East zone · live GPS · PPE gate</small></div><span class="chip" id="netChip">Online</span></div>
+  <div class="hazard"></div>
+</header>
+
+<main class="wrap">
+  <div class="banner warn" id="httpsWarn" hidden>This page must be opened from an <b>https://</b> link, otherwise the phone blocks GPS and the camera.</div>
+  <div class="banner bad" id="cfgWarn" hidden>Setup not finished: paste the Google Apps Script web app URL into <b>CONFIG.SCRIPT_URL</b> in this file.</div>
+
+  <section class="step active" id="s1">
+    <div class="step-h"><div class="num">1</div><h2>Engineer log-in</h2><span class="tag" id="loginTag"></span></div>
+    <div class="body">
+      <div id="loginForm" class="body">
+        <div class="grid2">
+          <label class="f">Employee ID<input type="text" id="fEmp" autocomplete="username" style="text-transform:uppercase" placeholder="e.g. EMP1042"></label>
+          <label class="f">PIN<input type="password" id="fPin" inputmode="numeric" autocomplete="current-password" placeholder="4–6 digits"></label>
+        </div>
+        <button class="btn primary" id="loginBtn">Log in for duty</button>
+        <div id="loginMsg"></div>
+      </div>
+      <div id="whoBox" class="gps" hidden>
+        <div class="row" style="justify-content:space-between;align-items:center"><div><b id="whoName"></b><div class="note" id="whoSub"></div></div><button class="btn" id="logoutBtn" style="flex:0 0 auto">Log out</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step locked" id="s2">
+    <div class="step-h"><div class="num">2</div><h2>Retail outlet</h2></div>
+    <div class="body">
+      <div class="grid2">
+        <label class="f">State (East zone)<select id="fState"><option value="WB">WB · West Bengal</option><option value="BH">BH · Bihar</option><option value="JH">JH · Jharkhand</option><option value="NE">NE · North East</option><option value="OR">OR · Odisha</option></select></label>
+        <label class="f">RO<select id="fRo"></select></label>
+      </div>
+      <div class="grid2" id="roManual" hidden>
+        <label class="f">RO code<input type="text" id="fRoCode" style="text-transform:uppercase" placeholder="e.g. ORF188"></label>
+        <label class="f">RO name<input type="text" id="fRoName" placeholder="RO name as per records"></label>
+      </div>
+      <p class="note" id="roInfo"></p>
+      <label class="f">Activity<select id="fAct"><option value="">Choose activity</option><option>Site survey</option><option>Civil work</option><option>Electrical work</option><option>IT / automation</option><option>DU / tank installation</option><option>Commissioning</option><option>Safety inspection</option><option>Other</option></select></label>
+    </div>
+  </section>
+
+  <section class="step locked" id="s3">
+    <div class="step-h"><div class="num">3</div><h2>Live GPS</h2><span class="tag" id="gpsTag"></span></div>
+    <div class="body">
+      <p class="hint">Stand at the RO and allow location access. Wait until accuracy is within <b id="maxAcc"></b>.</p>
+      <button class="btn primary" id="gpsBtn">Capture GPS location</button>
+      <div class="gps" id="gpsBox" hidden>
+        <div class="row" style="justify-content:space-between;align-items:center"><span class="mono" id="gpsVal">Waiting for satellites…</span><span class="chip" id="gpsQ">Searching</span></div>
+        <span class="note" id="gpsTime"></span>
+        <a class="note" id="gpsMap" target="_blank" rel="noopener" hidden>Check on Google Maps ↗</a>
+      </div>
+      <div id="gpsErr"></div>
+    </div>
+  </section>
+
+  <section class="step locked" id="s4">
+    <div class="step-h"><div class="num">4</div><h2>PPE check</h2><span class="tag" id="ppeTag"></span></div>
+    <div class="body">
+      <p class="hint">Answer honestly. If any required item is <b>No</b>, the site camera stays locked and the refusal is recorded.</p>
+      <div class="ppe" id="ppeList"></div>
+      <div id="ppeMsg"></div>
+      <div id="ppeCamWrap" hidden>
+        <p class="hint">Take a full-length PPE photo: helmet, vest and shoes must be visible. Ask a colleague, or prop the phone and use the timer.</p>
+        <div class="cam"><video id="ppeVideo" playsinline muted></video></div>
+        <div class="cam-bar"><button class="btn" id="ppeFlip">Switch camera</button><button class="btn" id="ppeTimer">3 s timer</button><button class="btn primary" id="ppeShoot">Capture</button></div>
+      </div>
+      <img class="shot" id="ppeShot" alt="PPE photo" hidden>
+      <div id="startMsg"></div>
+      <button class="btn" id="ppeRetake" hidden>Retake PPE photo</button>
+    </div>
+  </section>
+
+  <section class="step locked" id="s5">
+    <div class="step-h"><div class="num">5</div><h2>Site photos</h2><span class="tag" id="siteTag">🔒 Camera locked</span></div>
+    <div class="body">
+      <div class="cam"><video id="siteVideo" playsinline muted></video><div class="lockface" id="siteLock"><div><b>Camera locked</b>Complete the PPE check first.</div></div></div>
+      <label class="f">Caption for the next photo<input type="text" id="fCap" placeholder="e.g. DU island, tank pit, canopy"></label>
+      <div class="cam-bar"><button class="btn" id="siteFlip">Switch camera</button><button class="btn primary" id="siteShoot" disabled>Take photo</button></div>
+      <p class="note">Each photo is stamped with RO code, RO name, state, engineer, IST time and GPS, and saved to the Google Sheet and Drive at once.</p>
+      <div class="photos" id="photos"></div>
+    </div>
+  </section>
+
+  <section class="step locked" id="s6">
+    <div class="step-h"><div class="num">6</div><h2>Finish visit</h2></div>
+    <div class="body">
+      <p class="hint" id="finishHint"></p>
+      <button class="btn primary" id="finishBtn">Submit visit</button>
+      <div id="finishMsg"></div>
+      <div class="row"><button class="btn" id="packBtn">Save visit pack (optional AI check)</button><button class="btn" id="newBtn">Start a new visit</button></div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ======================= CONFIG ======================= */
+const CONFIG = {
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwdPKkqYIRDxdnIkyyiYUKBYsHvcKW_J7BW3ADOrWliKdqW-UkKIMgllflLzDQf1vry/exec",                               // paste the Apps Script Web app URL here (ends with /exec)
+  APP_KEY: "xTnpBFL8zDn1GoVKgxIt2ZcL",          // must match Settings > APP_KEY in the Google Sheet
+  MAX_GPS_ACCURACY_M: 100,
+  PHOTO_MAX_PX: 1600,
+  PPE: [
+    {k:"helmet", label:"Safety helmet", req:true},
+    {k:"vest",   label:"Hi-vis vest / reflective jacket", req:true},
+    {k:"shoes",  label:"Safety shoes", req:true},
+    {k:"gloves", label:"Hand gloves", req:false}
+  ]
+};
+/* ====================================================== */
+const STATES={WB:'West Bengal',BH:'Bihar',JH:'Jharkhand',NE:'North East',OR:'Odisha'};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ist=iso=>new Date(iso).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+const fmtGps=g=>`${g.lat.toFixed(6)}, ${g.lng.toFixed(6)} ±${Math.round(g.acc)} m`;
+const S={token:null,user:null,ros:[],cred:null};
+let V; function newVisit(){ V={startedAt:new Date().toISOString(),gps:null,live:null,bestGps:null,ppe:{answers:{},photo:null},visitId:null,photos:[],blockedSent:'',finished:false}; }
+newVisit();
+let watchId=null,stream=null,facing={ppe:'user',site:'environment'},camWant='';
+
+if(location.protocol!=='https:'&&!/^(localhost|127\.)/.test(location.hostname)) $('#httpsWarn').hidden=false;
+if(!CONFIG.SCRIPT_URL) $('#cfgWarn').hidden=false;
+$('#maxAcc').textContent=CONFIG.MAX_GPS_ACCURACY_M+' m';
+const setNet=()=>{ const c=$('#netChip'); c.textContent=navigator.onLine?'Online':'Offline'; c.className='chip '+(navigator.onLine?'ok':'warn'); };
+addEventListener('online',setNet); addEventListener('offline',setNet); setNet();
+addEventListener('beforeunload',e=>{ if(V.photos.some(p=>p.status!=='saved')||(V.visitId&&!V.finished)){ e.preventDefault(); e.returnValue=''; } });
+
+/* ---------- API to Google Sheet ---------- */
+async function api(action,body,retry=true){
+  if(!CONFIG.SCRIPT_URL) throw new Error('The Google Sheet link is not set up in this app yet.');
+  let j;
+  try{ const r=await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({key:CONFIG.APP_KEY,token:S.token,action,...body})}); j=await r.json(); }
+  catch(e){ throw new Error(navigator.onLine?'Could not reach the Google Sheet. Try again.':'No internet. Move to better signal and try again.'); }
+  if(!j.ok){
+    if(j.code==='session'&&retry&&S.cred){ await doLogin(S.cred.empId,S.cred.pin,true); return api(action,body,false); }
+    if(j.code==='session') logoutUi('Session expired. Log in again.');
+    throw new Error(j.error||'Request failed');
+  }
+  return j;
+}
+
+/* ---------- login ---------- */
+async function doLogin(empId,pin,silent){
+  const j=await api('login',{empId,pin,device:navigator.userAgent.slice(0,140)},false);
+  S.token=j.token; S.user=j.user; S.ros=j.ros||[]; S.cred={empId,pin};
+  if(!silent){ try{ localStorage.setItem('fa_emp',empId); }catch(e){} }
+  return j;
+}
+try{ $('#fEmp').value=localStorage.getItem('fa_emp')||''; }catch(e){}
+$('#loginBtn').onclick=async()=>{
+  const emp=$('#fEmp').value.trim().toUpperCase(), pin=$('#fPin').value.trim();
+  if(!emp||!pin){ $('#loginMsg').innerHTML='<div class="banner bad">Enter your Employee ID and PIN.</div>'; return; }
+  $('#loginBtn').disabled=true; $('#loginMsg').innerHTML='<div class="banner info">Checking…</div>';
+  try{ await doLogin(emp,pin); $('#fPin').value=''; $('#loginMsg').innerHTML='';
+    $('#whoName').textContent=S.user.name; $('#whoSub').textContent=`${S.user.empId} · ${STATES[S.user.state]} · East zone · logged in ${ist(new Date().toISOString())}`;
+    $('#loginForm').hidden=true; $('#whoBox').hidden=false; $('#loginTag').textContent='✓ Logged in';
+    $('#fState').value=S.user.state; fillRos(); update(); }
+  catch(e){ $('#loginMsg').innerHTML=`<div class="banner bad">${esc(e.message)}</div>`; }
+  $('#loginBtn').disabled=false;
+};
+function logoutUi(msg){ S.token=null; S.user=null; S.cred=null; $('#loginForm').hidden=false; $('#whoBox').hidden=true; $('#loginTag').textContent=''; if(msg) $('#loginMsg').innerHTML=`<div class="banner warn">${esc(msg)}</div>`; update(); }
+$('#logoutBtn').onclick=()=>{ if(V.visitId&&!V.finished){ toastMsg('#finishMsg','Submit the visit before logging out.','warn'); return; } newVisit(); resetUi(); logoutUi(''); };
+
+/* ---------- RO ---------- */
+function fillRos(){ const st=$('#fState').value; const list=S.ros.filter(r=>r.state===st).sort((a,b)=>a.code.localeCompare(b.code)); const cur=$('#fRo').value;
+  $('#fRo').innerHTML=`<option value="">${list.length?'Choose RO':'No ROs listed for this state'}</option>`+list.map(r=>`<option value="${esc(r.code)}">${esc(r.code)} · ${esc(r.name)}</option>`).join('')+'<option value="__other">RO not in list…</option>';
+  if([...$('#fRo').options].some(o=>o.value===cur)) $('#fRo').value=cur; roChanged(); }
+function roChanged(){ const other=$('#fRo').value==='__other'; $('#roManual').hidden=!other; const r=S.ros.find(x=>x.code===$('#fRo').value);
+  $('#roInfo').textContent=r?`${r.name}${r.district?' · '+r.district:''} · ${STATES[r.state]}`:other?'Visits to ROs not in the list are flagged for the supervisor.':''; update(); }
+$('#fState').onchange=fillRos; $('#fRo').onchange=roChanged;
+['#fRoCode','#fRoName','#fAct'].forEach(s=>{ $(s).addEventListener('input',update); $(s).addEventListener('change',update); });
+function RO(){ const st=$('#fState').value; if($('#fRo').value==='__other') return {code:$('#fRoCode').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,''),name:$('#fRoName').value.trim(),state:st};
+  const r=S.ros.find(x=>x.code===$('#fRo').value); return r?{code:r.code,name:r.name,state:r.state}:{code:'',name:'',state:st}; }
+const roOk=()=>{ const r=RO(); return !!(r.code&&r.name&&$('#fAct').value); };
+
+/* ---------- step state ---------- */
+const loggedIn=()=>!!S.user;
+const gpsOk=()=>!!V.gps;
+const ppeAnswered=()=>CONFIG.PPE.filter(p=>p.req).every(p=>V.ppe.answers[p.k]!==undefined);
+const ppeRefused=()=>CONFIG.PPE.filter(p=>p.req&&V.ppe.answers[p.k]===false);
+const ppeOk=()=>ppeAnswered()&&!ppeRefused().length&&!!V.visitId;
+function st(id,s){ const el=$(id); el.classList.remove('locked','active','done'); el.classList.add(s); }
+function update(){
+  const l=loggedIn(), r=l&&roOk(), g=r&&gpsOk(), a=g&&ppeAnswered()&&!ppeRefused().length, p=g&&ppeOk();
+  const lockRo=!!V.visitId; ['#fState','#fRo','#fRoCode','#fRoName','#fAct'].forEach(s=>$(s).disabled=lockRo);
+  st('#s1',l?'done':'active'); st('#s2',!l?'locked':r?'done':'active'); st('#s3',!r?'locked':g?'done':'active');
+  st('#s4',!g?'locked':p?'done':'active'); st('#s5',!p?'locked':V.photos.length?'done':'active');
+  const saved=V.photos.filter(x=>x.status==='saved').length, pending=V.photos.length-saved;
+  st('#s6',(p&&V.photos.length)?(V.finished?'done':'active'):'locked');
+  $('#ppeCamWrap').hidden=!a||!!V.ppe.photo;
+  $('#ppeTag').textContent=p?'✓ Verified':ppeRefused().length?'✕ Blocked':'';
+  $('#siteTag').textContent=p?'🔓 Camera unlocked':'🔒 Camera locked';
+  $('#siteLock').hidden=p; $('#siteShoot').disabled=!p||V.finished; $('#siteFlip').disabled=!p;
+  $('#finishHint').textContent=`${saved} of ${V.photos.length} site photo${V.photos.length===1?'':'s'} saved to the Google Sheet${pending?` · ${pending} still uploading or failed`:''}.`;
+  $('#finishBtn').disabled=!p||!V.photos.length||pending>0||V.finished;
+  manageCameras();
+}
+
+/* ---------- GPS ---------- */
+$('#gpsBtn').onclick=()=>{
+  if(!('geolocation' in navigator)){ $('#gpsErr').innerHTML='<div class="banner bad">This phone browser has no GPS support. Use Chrome or Safari.</div>'; return; }
+  $('#gpsBox').hidden=false; $('#gpsErr').innerHTML=''; $('#gpsBtn').textContent='Refreshing GPS…';
+  if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+  watchId=navigator.geolocation.watchPosition(pos=>{
+    const g={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy,at:new Date(pos.timestamp).toISOString()};
+    V.live=g; if(!V.bestGps||g.acc<=V.bestGps.acc) V.bestGps=g;
+    $('#gpsVal').textContent=fmtGps(g); $('#gpsTime').textContent='Last fix: '+ist(g.at)+' IST';
+    const m=$('#gpsMap'); m.hidden=false; m.href=`https://www.google.com/maps?q=${g.lat},${g.lng}`;
+    const q=$('#gpsQ'), good=g.acc<=30, okk=g.acc<=CONFIG.MAX_GPS_ACCURACY_M; q.className='chip '+(good?'ok':okk?'warn':'bad'); q.textContent=good?'Good':okk?'Acceptable':'Weak';
+    if(okk&&!V.gps){ V.gps=V.bestGps; $('#gpsTag').textContent='✓ Locked'; $('#gpsBtn').textContent='GPS locked · tap to refresh'; update(); }
+    else if(okk&&V.gps&&g.acc<V.gps.acc) V.gps=g;
+  },err=>{ const msg=err.code===1?'Location permission was refused. Allow location for this site in browser settings, then tap Capture again.':err.code===3?'GPS is taking too long. Move to open sky and tap Capture again.':'GPS is not available. Turn on Location in phone settings.';
+    $('#gpsErr').innerHTML=`<div class="banner bad">${msg}</div>`; $('#gpsBtn').textContent='Capture GPS location'; },{enableHighAccuracy:true,maximumAge:0,timeout:30000});
+};
+const curGps=()=>V.live&&V.live.acc<=CONFIG.MAX_GPS_ACCURACY_M?V.live:V.gps;
+
+/* ---------- PPE ---------- */
+function renderPpe(){
+  $('#ppeList').innerHTML=CONFIG.PPE.map(p=>{ const a=V.ppe.answers[p.k];
+    return `<div class="ppe-row"><span>${esc(p.label)}<small>${p.req?'Required':'Recommended'}</small></span><div class="yn"><button class="y ${a===true?'on':''}" data-k="${p.k}" data-v="1">Yes</button><button class="n ${a===false?'on':''}" data-k="${p.k}" data-v="0">No</button></div></div>`; }).join('');
+  $('#ppeList').querySelectorAll('button').forEach(b=>b.onclick=()=>{ if(V.visitId) return; V.ppe.answers[b.dataset.k]=b.dataset.v==='1'; if(ppeRefused().length){ V.ppe.photo=null; $('#ppeShot').hidden=true; $('#ppeRetake').hidden=true; } renderPpe(); ppeMsg(); update(); });
+}
+function ppeMsg(){ const r=ppeRefused();
+  $('#ppeMsg').innerHTML=r.length?`<div class="banner bad">Camera locked. You are not allowed to start site work.<p>Wear your ${esc(r.map(p=>p.label.toLowerCase()).join(', '))} and answer again. <span id="blkState">Recording…</span></p></div>`:'';
+  if(r.length){ const key=r.map(p=>p.k).join(','); if(V.blockedSent===key){ $('#blkState').textContent='Recorded in the Google Sheet.'; return; }
+    const ppe={}; CONFIG.PPE.forEach(p=>{ if(V.ppe.answers[p.k]!==undefined) ppe[p.k]=V.ppe.answers[p.k]; }); const ro=RO(), g=curGps();
+    api('blocked',{roCode:ro.code,roName:ro.name,state:ro.state,activity:$('#fAct').value,ppe,gps:g?{lat:g.lat,lng:g.lng,acc:g.acc}:null})
+      .then(()=>{ V.blockedSent=key; const el=$('#blkState'); if(el) el.textContent='Recorded in the Google Sheet.'; })
+      .catch(e=>{ const el=$('#blkState'); if(el) el.textContent='Could not record: '+e.message; }); }
+}
+renderPpe();
+
+/* ---------- cameras ---------- */
+function stopCam(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } $('#ppeVideo').srcObject=null; $('#siteVideo').srcObject=null; }
+async function startCam(video,face){ stopCam(); if(!navigator.mediaDevices?.getUserMedia) throw new Error('nocam');
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:face},width:{ideal:1920},height:{ideal:1440}},audio:false});
+  video.srcObject=stream; video.style.transform=face==='user'?'scaleX(-1)':''; await video.play().catch(()=>{}); video.dataset.face=face; }
+async function manageCameras(){
+  const want=!$('#ppeCamWrap').hidden?'ppe':(ppeOk()&&!V.finished&&!$('#s5').classList.contains('locked'))?'site':'';
+  if(want===camWant) return; camWant=want;
+  try{ if(want==='ppe') await startCam($('#ppeVideo'),facing.ppe); else if(want==='site') await startCam($('#siteVideo'),facing.site); else stopCam(); }
+  catch(e){ const box=want==='ppe'?$('#ppeMsg'):$('#photos'); box.insertAdjacentHTML('beforebegin',`<div class="banner bad">Camera could not open. Allow camera access for this page in browser settings${location.protocol!=='https:'?' and open it from an https:// link':''}.</div>`); }
+}
+$('#ppeFlip').onclick=async()=>{ facing.ppe=facing.ppe==='user'?'environment':'user'; camWant=''; await manageCameras(); };
+$('#siteFlip').onclick=async()=>{ facing.site=facing.site==='environment'?'user':'environment'; camWant=''; await manageCameras(); };
+function grab(video,lines){ const vw=video.videoWidth,vh=video.videoHeight; if(!vw) return null;
+  const sc=Math.min(1,CONFIG.PHOTO_MAX_PX/Math.max(vw,vh)),w=Math.round(vw*sc),h=Math.round(vh*sc);
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d');
+  if(video.dataset.face==='user'){ x.translate(w,0); x.scale(-1,1); } x.drawImage(video,0,0,w,h); x.setTransform(1,0,0,1,0,0);
+  const fs=Math.max(14,Math.round(w*0.024)),lh=Math.round(fs*1.3),pad=Math.round(fs*0.6),bh=lines.length*lh+pad*2;
+  x.fillStyle='rgba(0,0,0,.62)'; x.fillRect(0,h-bh,w,bh); x.fillStyle='#E4611A'; x.fillRect(0,h-bh,Math.max(4,Math.round(fs*.3)),bh);
+  x.fillStyle='#fff'; x.font=`600 ${fs}px Barlow, Arial, sans-serif`; x.textBaseline='top'; lines.forEach((l,i)=>x.fillText(l,pad+Math.round(fs*.4),h-bh+pad+i*lh,w-pad*2));
+  return c.toDataURL('image/jpeg',0.8); }
+function stamp(kind){ const r=RO(),u=S.user,g=curGps(),now=new Date().toISOString();
+  return {now,g,l:[`RO ${r.code} · ${r.name}`,`${STATES[r.state]} (${r.state}) · East zone · ${$('#fAct').value}`,`${kind} · ${u.name} (${u.empId})`,`${ist(now)} IST`,`GPS ${fmtGps(g)}`]}; }
+
+async function shootPpe(){ const {now,g,l}=stamp('PPE CHECK'); const url=grab($('#ppeVideo'),l); if(!url) return;
+  V.ppe.photo={dataUrl:url,takenAt:now,lat:g.lat,lng:g.lng,acc:g.acc}; $('#ppeShot').src=url; $('#ppeShot').hidden=false; update(); startVisit(); }
+async function startVisit(){
+  $('#ppeRetake').hidden=true; $('#startMsg').innerHTML='<div class="banner info">Saving PPE photo and starting the visit…</div>';
+  const ro=RO(), ppe={}; CONFIG.PPE.forEach(p=>ppe[p.k]=V.ppe.answers[p.k]===true);
+  try{ const j=await api('startVisit',{roCode:ro.code,roName:ro.name,state:ro.state,activity:$('#fAct').value,ppe,gps:{lat:V.gps.lat,lng:V.gps.lng,acc:V.gps.acc},ppePhoto:V.ppe.photo});
+    V.visitId=j.visitId; V.folderUrl=j.folderUrl; $('#startMsg').innerHTML=`<div class="banner ok">PPE confirmed. Visit ${esc(j.visitId)} started.<p>Site camera unlocked.</p></div>`; }
+  catch(e){ $('#startMsg').innerHTML=`<div class="banner bad">${esc(e.message)}<p><button class="btn" id="retryStart">Try again</button></p></div>`; $('#retryStart').onclick=startVisit; $('#ppeRetake').hidden=false; }
+  update(); }
+$('#ppeShoot').onclick=shootPpe;
+$('#ppeTimer').onclick=()=>{ let n=3; const b=$('#ppeTimer'); b.disabled=true; const t=setInterval(()=>{ b.textContent=n+'…'; if(n--<=0){ clearInterval(t); b.textContent='3 s timer'; b.disabled=false; shootPpe(); } },1000); };
+$('#ppeRetake').onclick=()=>{ V.ppe.photo=null; $('#ppeShot').hidden=true; $('#ppeRetake').hidden=true; $('#startMsg').innerHTML=''; update(); };
+
+/* ---------- site photos ---------- */
+$('#siteShoot').onclick=()=>{ if(!ppeOk()) return; const n=V.photos.length+1; const {now,g,l}=stamp('SITE PHOTO '+n); const url=grab($('#siteVideo'),l); if(!url) return;
+  const p={n,dataUrl:url,caption:$('#fCap').value.trim(),takenAt:now,lat:g.lat,lng:g.lng,acc:g.acc,status:'uploading'}; $('#fCap').value='';
+  V.photos.push(p); renderPhotos(); update(); upload(p); };
+async function upload(p){ p.status='uploading'; renderPhotos(); update();
+  try{ await api('photo',{visitId:V.visitId,n:p.n,dataUrl:p.dataUrl,caption:p.caption,takenAt:p.takenAt,lat:p.lat,lng:p.lng,acc:p.acc}); p.status='saved'; }
+  catch(e){ p.status='failed'; p.err=e.message; }
+  renderPhotos(); update(); }
+function renderPhotos(){ const box=$('#photos'); box.innerHTML='';
+  V.photos.forEach(p=>{ const d=document.createElement('div'); d.className='ph';
+    const chip=p.status==='saved'?'<span class="chip ok">✓ Saved</span>':p.status==='uploading'?'<span class="chip warn">Uploading…</span>':'<span class="chip bad">Failed</span>';
+    d.innerHTML=`<img src="${p.dataUrl}" alt="Site photo ${p.n}"><div class="row" style="justify-content:space-between;align-items:center">${chip}<span class="note">#${p.n}</span></div><span class="note">${esc(p.caption||'No caption')}</span>${p.status==='failed'?`<button>Retry upload</button>`:''}`;
+    const b=d.querySelector('button'); if(b) b.onclick=()=>upload(p); box.appendChild(d); }); }
+
+/* ---------- finish ---------- */
+function toastMsg(sel,msg,cls){ $(sel).innerHTML=`<div class="banner ${cls}">${esc(msg)}</div>`; }
+$('#finishBtn').onclick=async()=>{ const b=$('#finishBtn'); b.disabled=true; $('#finishMsg').innerHTML='<div class="banner info">Submitting…</div>';
+  try{ const j=await api('finishVisit',{visitId:V.visitId}); V.finished=true;
+    $('#finishMsg').innerHTML=`<div class="banner ok">Visit submitted to the Google Sheet.<p>${esc(RO().code)} · ${esc(RO().name)} · ${j.sitePhotos} site photo${j.sitePhotos===1?'':'s'}${V.folderUrl?` · <a href="${V.folderUrl}" target="_blank" rel="noopener">Open photo folder</a>`:''}</p></div>`; }
+  catch(e){ toastMsg('#finishMsg',e.message,'bad'); } update(); };
+
+async function sha256(s){ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+$('#packBtn').onclick=async()=>{ if(!V.ppe.photo||!S.user){ toastMsg('#finishMsg','Nothing to save yet.','warn'); return; }
+  const ro=RO(),answers={}; CONFIG.PPE.forEach(p=>answers[p.k]=!!V.ppe.answers[p.k]);
+  const pk={format:'site-safety-visit',version:1,visitId:V.visitId||('fa'+Date.now().toString(36)),engineer:{name:S.user.name,empId:S.user.empId},
+    site:{code:ro.code,name:ro.name,state:ro.state,zone:'East',activity:$('#fAct').value},startedAt:V.startedAt,finishedAt:new Date().toISOString(),
+    gps:{lat:V.gps.lat,lng:V.gps.lng,acc:V.gps.acc,at:V.gps.at},ppe:{checklist:answers,photo:V.ppe.photo},
+    photos:V.photos.map(p=>({dataUrl:p.dataUrl,caption:p.caption,takenAt:p.takenAt,lat:p.lat,lng:p.lng,acc:p.acc})),device:navigator.userAgent.slice(0,160)};
+  pk.hash=await sha256(JSON.stringify(pk)); const f=new File([JSON.stringify(pk)],`visit-${ro.code}-${new Date().toISOString().slice(0,16).replace(/[:T]/g,'')}.json`,{type:'application/json'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:'Visit pack '+ro.code}); return; }catch(e){ if(e.name==='AbortError') return; } }
+  const u=URL.createObjectURL(f),a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),5000); };
+
+function resetUi(){ $('#ppeShot').hidden=true; $('#ppeRetake').hidden=true; $('#startMsg').innerHTML=''; $('#finishMsg').innerHTML=''; $('#gpsTag').textContent=''; $('#gpsBox').hidden=true; $('#gpsBtn').textContent='Capture GPS location';
+  if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; } $('#fRo').value=''; $('#fRoCode').value=''; $('#fRoName').value=''; $('#fAct').value=''; roChanged(); renderPpe(); ppeMsg(); renderPhotos(); camWant='x'; update(); scrollTo(0,0); }
+$('#newBtn').onclick=()=>{ if(V.visitId&&!V.finished&&!$('#newBtn').dataset.sure){ $('#newBtn').dataset.sure='1'; $('#newBtn').textContent='Visit not submitted. Tap again to discard'; return; }
+  delete $('#newBtn').dataset.sure; $('#newBtn').textContent='Start a new visit'; newVisit(); resetUi(); };
+
+fillRos(); update();
+</script>
+</body>
+</html>
